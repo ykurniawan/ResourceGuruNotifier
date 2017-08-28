@@ -13,57 +13,15 @@ module.exports = function (context, req) {
 
         try{
             const payload = req.body.payload;
-            const resourceEmail = payload.resource.email;
-            let action = "booked";
-            let project = (payload.project || payload.client || { name: "unknown"}).name.replace('.', '');
-            let startDate = payload.start_date;
-            let endDate = payload.end_date;
-            let duration = "";
-            let note = payload.notes || payload.details;
-            let booker = payload.booker.name;
-            let pushMsg = "";
-            const multiDays = startDate != endDate;
-            const isToday = (new Date(startDate)).setHours(0,0,0,0) == (new Date()).setHours(0,0,0,0);
-            const tomorrow = new Date().addDays(1);
-            const isTomorrow = (new Date(startDate)).setHours(0,0,0,0) == tomorrow.setHours(0,0,0,0);
-
-            action = payload.action === "create" ? "booked" : "removed";
-            
-            if(note)
-                note = ` "${note}"`;
-
-            if(action === "booked"){
-                if(multiDays){
-                    pushMsg = `You're booked on ${project} from ${startDate} to ${endDate}.${note}`;
-                }
-                else{
-                    if(isToday)
-                        pushMsg = `You're booked on ${project} today.${note}`;
-                    else if(isTomorrow)
-                        pushMsg = `You're booked on ${project} tomorrow.${note}`;
-                    else
-                        pushMsg = `You're booked for ${project} on ${startDate}.${note}`;
-                }
-            }
-            else if(action === "removed"){
-                if(multiDays){
-                    pushMsg = `You're removed from ${project}, from ${startDate} to ${endDate}.${note}`; 
-                }
-                else{
-                    if(isToday)
-                        pushMsg = `You're removed from ${project} today.${note}`;
-                    else if(isTomorrow)
-                        pushMsg = `You're removed from ${project} tomorrow.${note}`;
-                    else
-                        pushMsg = `You're removed from ${project} on ${startDate}.${note}`;
-                }
-            }
+            const content = buildContent(payload);
+            const resourceEmail = determineRecipient(payload.resource.email);
+            context.log(resourceEmail);
 
             const pushBody = { 
                 app_id: process.env.ONESIGNAL_APPID,
-                contents: {"en": pushMsg },
+                contents: {"en": content.pushMessage },
                 headings: {"en": "Resource Guru"},
-                subtitle: {"en": project},
+                subtitle: {"en": content.projectName},
                 filters: [
 	  	            {"field": "email", "relation": "=", "value": resourceEmail}
 	            ],
@@ -85,7 +43,7 @@ module.exports = function (context, req) {
             context.log("Err: " + err);
             context.res = {
                     status: 400,
-                    body: "Bad Request :p"
+                    body: "Bad Request :p" + err
                 };
         }
         
@@ -103,3 +61,64 @@ module.exports = function (context, req) {
 
     context.done();
 };
+
+function buildContent(payload){
+
+    let action = "booked";
+    let project = (payload.project || payload.client || { name: "unknown"}).name.replace('.', '');
+    let startDate = payload.start_date;
+    let endDate = payload.end_date;
+    let duration = "";
+    let note = payload.notes || payload.details;
+    let booker = payload.booker.name;
+    let pushMsg = "";
+    const multiDays = startDate != endDate;
+    const isToday = (new Date(startDate)).setHours(0,0,0,0) == (new Date()).setHours(0,0,0,0);
+    const tomorrow = new Date().addDays(1);
+    const isTomorrow = (new Date(startDate)).setHours(0,0,0,0) == tomorrow.setHours(0,0,0,0);
+
+    action = payload.action === "create" ? "booked" : "removed";
+    
+    if(note)
+        note = ` "${note}"`;
+
+    if(action === "booked"){
+        if(multiDays){
+            pushMsg = `You're booked on ${project} from ${startDate} to ${endDate}.${note}`;
+        }
+        else{
+            if(isToday)
+                pushMsg = `You're booked on ${project} today.${note}`;
+            else if(isTomorrow)
+                pushMsg = `You're booked on ${project} tomorrow.${note}`;
+            else
+                pushMsg = `You're booked for ${project} on ${startDate}.${note}`;
+        }
+    }
+    else if(action === "removed"){
+        if(multiDays){
+            pushMsg = `You're removed from ${project}, from ${startDate} to ${endDate}.${note}`; 
+        }
+        else{
+            if(isToday)
+                pushMsg = `You're removed from ${project} today.${note}`;
+            else if(isTomorrow)
+                pushMsg = `You're removed from ${project} tomorrow.${note}`;
+            else
+                pushMsg = `You're removed from ${project} on ${startDate}.${note}`;
+        }
+    }
+
+    return { 
+        pushMessage: pushMsg,
+        projectName: project
+    };
+
+}
+
+function determineRecipient(email){
+    if(email.toLowerCase().includes("isna.firdaus"))
+        email = "isna.firdaus@ogilvy.com.au";
+
+    return email;
+}
