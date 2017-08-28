@@ -1,0 +1,14 @@
+{
+  "name": "rghook",
+  "version": "1.0.0",
+  "description": "RG hook receiver and this function will notify the bookings to the users",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Yitro Kurniawan",
+  "license": "ISC",
+  "dependencies": {
+    "unirest": "^0.5.1"
+  }
+}
