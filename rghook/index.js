@@ -35,6 +35,9 @@ module.exports = function (context, req) {
                 .send(pushBody)
                 .end(function (response) {
                    //context.log("OneSignal: " + JSON.stringify(response.body));
+                   context.res = {
+                       status: 201
+                   }
                 });
 
         }
@@ -42,7 +45,7 @@ module.exports = function (context, req) {
         {
             context.log("Err: " + err);
             context.res = {
-                    status: 400,
+                    status: 200, // since ResourceGuru does not accept 400 which make webhook in pending state
                     body: "Bad Request :p" + err
                 };
         }
